@@ -1,6 +1,6 @@
 # Gaggimate MCP Server
 
-MCP server for Gaggimate espresso machine profiles with AI-powered profile optimization.
+MCP server for Gaggimate espresso machine profiles with AI-powered profile optimization. 
 
 ## Overview
 
@@ -22,8 +22,6 @@ The process:
 3. **AI updates the "AI Profile"** - Adjust parameters based on the analysis (temperature, pressure, flow, timing)
 4. **Repeat** - Next shot uses the improved profile
 
-This creates a continuous improvement cycle where each shot provides data to refine the next one, automatically adapting to new coffee beans, different roast levels, or changing preferences.
-
 ## Quick Start
 
 ```bash
@@ -39,7 +37,7 @@ GAGGIMATE_HOST=192.168.1.100 npx -y matvey-kuk/gaggimate-mcp
 
 - `list_profiles`: List all brewing profiles
 - `get_profile`: Get a specific profile by ID
-- `update_ai_profile`: Update or create the AI Profile for espresso brewing (supports adaptive extraction with stop conditions)
+- `update_ai_profile`: Update or create the AI Profile for espresso brewing (supports adaptive extraction with stop conditions). This tool can't update other profiles to avoid corrupting them!
 - `list_shot_history`: List brewing history (with optional limit/offset)
 - `get_shot`: Get detailed information about a specific shot by ID
 
