@@ -2,6 +2,12 @@
 
 MCP server for Gaggimate espresso machine profiles.
 
+## Quick Start
+
+```bash
+GAGGIMATE_HOST=192.168.1.100 npx -y matvey-kuk/gaggimate-mcp
+```
+
 ## Environment Variables
 
 - `GAGGIMATE_HOST`: Device hostname (default: `localhost`)
