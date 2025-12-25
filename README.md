@@ -1,6 +1,33 @@
 # Gaggimate MCP Server
 
-MCP server for Gaggimate espresso machine profiles.
+MCP server for Gaggimate espresso machine profiles with AI-powered profile optimization.
+
+## Overview
+
+This MCP server enables an AI feedback loop for perfecting espresso extraction. The AI can read shot history, analyze extraction data, and update the "AI Profile" to continuously improve your espresso shots. This actually works and allows the machine to automatically tune itself to new coffee beans!
+
+### AI Optimization Loop
+
+```mermaid
+graph LR
+    A[Make a Shot] --> B[AI Reads Shot Data via MCP]
+    B --> C[AI Analyzes Extraction]
+    C --> D[AI Updates 'AI Profile']
+    D --> A
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#bfb,stroke:#333,stroke-width:2px
+```
+
+The process:
+1. **Make a shot** - Brew espresso using the current AI Profile
+2. **AI analyzes the shot data** - Read temperature curves, pressure profiles, and extraction metrics via MCP
+3. **AI updates the "AI Profile"** - Adjust parameters based on the analysis (temperature, pressure, flow, timing)
+4. **Repeat** - Next shot uses the improved profile
+
+This creates a continuous improvement cycle where each shot provides data to refine the next one, automatically adapting to new coffee beans, different roast levels, or changing preferences.
 
 ## Quick Start
 
