@@ -2,6 +2,8 @@
 
 MCP server for Gaggimate espresso machine profiles with AI-powered profile optimization. 
 
+Blogpost: https://archestra.ai/blog/brew-by-ai
+
 ## Overview
 
 This MCP server enables an AI feedback loop for perfecting espresso extraction. The AI can read shot history, analyze extraction data, and update the "AI Profile" to continuously improve your espresso shots. This actually works and allows the machine to automatically tune itself to new coffee beans!
