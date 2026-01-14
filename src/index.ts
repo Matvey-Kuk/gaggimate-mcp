@@ -328,6 +328,78 @@ async function updateOrCreateAIProfile(profileData: any): Promise<any> {
   });
 }
 
+// Fetch shot notes from Gaggimate WebSocket API
+async function fetchShotNotesFromGaggimate(shotId: string): Promise<any | null> {
+  return new Promise((resolve) => {
+    const WEBSOCKET_URL = `${GAGGIMATE_PROTOCOL}://${GAGGIMATE_HOST}/ws`;
+    const ws = new WebSocket(WEBSOCKET_URL);
+    const requestId = generateRequestId();
+    let timeoutHandle: NodeJS.Timeout | null = null;
+    let resolved = false;
+
+    const cleanup = () => {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = null;
+      }
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    };
+
+    // Shorter timeout for notes - don't block the main request
+    timeoutHandle = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(null); // Return null on timeout, don't fail the whole request
+      }
+    }, REQUEST_TIMEOUT);
+
+    ws.on("open", () => {
+      const request = {
+        tp: "req:history:notes:get",
+        rid: requestId,
+        id: shotId, // Use unpadded ID
+      };
+      ws.send(JSON.stringify(request));
+    });
+
+    ws.on("message", (data: WebSocket.Data) => {
+      try {
+        const response = JSON.parse(data.toString());
+        if (response.tp === "res:history:notes:get" && response.rid === requestId) {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(response.notes || null);
+          }
+        }
+      } catch (error) {
+        // Ignore parse errors for other messages (like evt:status)
+      }
+    });
+
+    ws.on("error", () => {
+      if (!resolved) {
+        resolved = true;
+        cleanup();
+        resolve(null); // Return null on error, don't fail
+      }
+    });
+
+    ws.on("close", () => {
+      if (!resolved) {
+        resolved = true;
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
+        resolve(null);
+      }
+    });
+  });
+}
+
 // Fetch shot history from Gaggimate HTTP API
 async function fetchShotHistoryFromGaggimate(limit?: number, offset?: number): Promise<any[]> {
   try {
@@ -464,13 +536,17 @@ const TOOLS: Tool[] = [
   },
   {
     name: "get_shot",
-    description: "Get detailed information about a specific shot by ID",
+    description: "Get detailed information about a specific shot by ID, including user notes (grind setting, bean type, dose, ratio, taste). Optionally includes full curve data with all sensor samples.",
     inputSchema: {
       type: "object",
       properties: {
         shotId: {
           type: "string",
           description: "The ID of the shot to retrieve",
+        },
+        includeFullCurve: {
+          type: "boolean",
+          description: "If true, includes all ~100 data points from the extraction curve (temperature, pressure, flow over time). Default: false (returns only 3 representative samples per phase).",
         },
       },
       required: ["shotId"],
@@ -718,6 +794,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "get_shot": {
         try {
           const shotId = args?.shotId as string;
+          const includeFullCurve = args?.includeFullCurve as boolean || false;
+
           if (!shotId) {
             return {
               content: [
@@ -733,7 +811,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
           }
 
-          const shot = await fetchShotFromGaggimate(shotId);
+          // Fetch shot data and notes in parallel
+          const [shot, notes] = await Promise.all([
+            fetchShotFromGaggimate(shotId),
+            fetchShotNotesFromGaggimate(shotId),
+          ]);
+
           if (!shot) {
             return {
               content: [
@@ -750,7 +833,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
 
           // Transform shot data to AI-friendly format
-          const transformedShot = transformShotForAI(shot);
+          const transformedShot = transformShotForAI(shot, includeFullCurve);
 
           return {
             content: [
@@ -758,6 +841,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 type: "text",
                 text: JSON.stringify({
                   shot: transformedShot,
+                  notes: notes,
                   source: GAGGIMATE_HOST,
                 }),
               },
