@@ -61,9 +61,10 @@ interface TransformedShot {
   };
   summary: ShotSummary;
   phases: PhaseData[];
+  full_curve?: TransformedSample[];
 }
 
-export function transformShotForAI(shot: ShotData): TransformedShot {
+export function transformShotForAI(shot: ShotData, includeFullCurve: boolean = false): TransformedShot {
   // Extract bluetooth scale and volumetric info from first sample
   const firstSample = shot.samples[0];
   const bluetoothConnected = firstSample?.systemInfo?.bluetoothScaleConnected || false;
@@ -71,11 +72,12 @@ export function transformShotForAI(shot: ShotData): TransformedShot {
 
   // Calculate summaries
   const summary = calculateSummary(shot);
-  
+
   // Process phases
   const phases = processPhases(shot);
 
-  return {
+  // Build result
+  const result: TransformedShot = {
     metadata: {
       shot_id: shot.id,
       profile_name: shot.profileName,
@@ -91,6 +93,19 @@ export function transformShotForAI(shot: ShotData): TransformedShot {
     summary,
     phases,
   };
+
+  // Include full curve data if requested
+  if (includeFullCurve) {
+    result.full_curve = shot.samples.map(sample => ({
+      time_seconds: (sample.t || 0) / 1000,
+      temperature_c: sample.ct || 0,
+      pressure_bar: sample.cp || 0,
+      flow_ml_s: sample.pf || 0,
+      weight_g: sample.v || 0,
+    }));
+  }
+
+  return result;
 }
 
 function calculateSummary(shot: ShotData): ShotSummary {
